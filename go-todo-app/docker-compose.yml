@@ -1,0 +1,39 @@
+services:
+  db:
+    image: mysql:latest
+    container_name: todo-db
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: todoapp
+      MYSQL_USER: user
+      MYSQL_PASSWORD: password
+      TZ: Asia/Seoul
+    ports:
+      - "3307:3306"
+    volumes:
+      - db-data:/var/lib/mysql
+      - /etc/timezone:/etc/timezone:ro
+      - ./mysql/initdb.d:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uuser", "-ppassword"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  app:
+    build: .
+    container_name: todo-app
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db
+    environment:
+      DB_HOST: db
+      DB_PORT: "3306"
+      DB_USER: user
+      DB_PASSWORD: password
+      DB_NAME: todoapp
+    entrypoint: ["/wait-for.sh", "db", "/go-todo"]
+
+volumes:
+  db-data:
